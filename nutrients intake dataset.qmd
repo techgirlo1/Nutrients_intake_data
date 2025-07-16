@@ -47,7 +47,7 @@ energy_data$demographics <- tolower(gsub("[^a-zA-Z0-9]+", "_", energy_data$demog
 ```
 
 ```{r}
-#comparing foodsource and Income with energy value
+#comparing foodsource and Demographics(income and race) with energy value using linear regression
 x_1 = energy_data$demographics
 x_2 = energy_data$food_source
 y = energy_data$value
@@ -57,7 +57,7 @@ summary(model_n)
 ```
 
 ```{r}
-#comparing foodsource and Income with energy value
+#comparing foodsource and Demographics(income and race) with energy value using linear regression
 x_1 = energy_data$demographics
 x_2 = energy_data$food_source
 y = energy_data$value
@@ -67,7 +67,7 @@ summary(model_n1)
 ```
 
 ```{r}
-#comparing foodsource and Income with energy value using linear regression
+#comparing foodsource and Demographics(income and race) with energy value using linear regression
 x_1 = energy_data$demographics
 x_2 = energy_data$food_source
 y = energy_data$value
@@ -84,21 +84,59 @@ energy_data <- energy_data |>
 ```
 
 ```{r}
-#Remove total from the food_source
+#Remove total from the food_source, Not needed
 energy_data <- subset(energy_data, food_source != "Total")
 
 ```
 
 ```{r}
-#visualization of the dataset using Bar graph
-summary_data <- energy_data |> 
-  group_by(new_column) |> 
-  summarise(mean_value = mean(value), se = sd(value)/sqrt(n()))
+#visualization of the impact of food_source and demographics(income) on energy value
+# filter income and save in income_data variable
+income_data <- energy_data %>%
+  filter(grepl("income", energy_data$demographics))
 
-ggplot(summary_data, aes(x = new_column, y = mean_value)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
-  geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "Demographic + Food Source", y = "Mean Energy Intake")
+# Step 2: Group by food source and income
+summary_income <- income_data %>%
+  group_by(food_source, demographics) %>%
+  summarise(
+    mean_value = mean(value, na.rm = TRUE),
+    se_value = sd(value, na.rm = TRUE) / sqrt(n()),
+    .groups = "drop"
+  )
+
+# Step 3: Plot
+ggplot(summary_income, aes(x = food_source, y = mean_value, fill = demographics)) +
+  geom_bar(stat = "identity", position = position_dodge(0.9)) +
+  geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value),
+                width = 0.2, position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  labs(title = "Impact of Food Source and Income on Energy Value",
+       x = "Food Source", y = "Mean Energy Value") +
+  theme_minimal()
+```
+
+```{r}
+#visualization of the impact of food_source and demographics(race) on energy value
+# filter income and save in race_data variable
+race_data <- energy_data %>%
+  filter(grepl("race", energy_data$demographics))
+
+# Step 2: Group by food source and income
+summary_income <- race_data %>%
+  group_by(food_source, demographics) %>%
+  summarise(
+    mean_value = mean(value, na.rm = TRUE),
+    se_value = sd(value, na.rm = TRUE) / sqrt(n()),
+    .groups = "drop"
+  )
+
+# Step 3: Plot
+ggplot(summary_income, aes(x = food_source, y = mean_value, fill = demographics)) +
+  geom_bar(stat = "identity", position = position_dodge(0.9)) +
+  geom_errorbar(aes(ymin = mean_value - se_value, ymax = mean_value + se_value),
+                width = 0.2, position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  labs(title = "Impact of Food Source and Race on Energy Value",
+       x = "Food Source", y = "Mean Energy Value") +
+  theme_minimal()
 ```
