@@ -1,0 +1,113 @@
+---
+title: "nutrients itake data"
+author: "habeebah"
+format: html
+editor: visual
+---
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+```{r}
+# IMPORTING A DATA
+nutrient <- read.csv('/home/habeebat/Desktop/nutrient.csv', stringsAsFactors = TRUE, header = TRUE)
+
+
+```
+
+```{r}
+# exploring the nutrient 
+nutrient |>
+  janitor::clean_names() -> nutrient
+```
+
+```{r}
+# filter Nutrients type table to have only the Energy and save it in a variable "energy_data"
+energy_data <- nutrient%>% filter(grepl("Energy", nutrient))
+```
+
+```{r}
+# filter the Demographics to only Income and Race and save it in the income and race variables
+#use rbind command to join both variables and save it in variable "energy_data"
+income <- energy_data %>%
+  filter(grepl("Income" , energy_data$demographics))
+
+race <- energy_data %>%
+  filter(grepl("Race" , energy_data$demographics))
+
+energy_data <- rbind(income,race)
+```
+
+```{r}
+#custom way of cleaning
+#can also use
+#energy_data$demographic <- make_clean_names(energy_data$demographic)
+energy_data$demographics <- tolower(gsub("[^a-zA-Z0-9]+", "_", energy_data$demographics))
+
+
+```
+
+```{r}
+#comparing foodsource and Income with energy value
+x_1 = energy_data$demographics
+x_2 = energy_data$food_source
+y = energy_data$value
+
+model_n = lm(y ~  x_1 + x_2, energy_data)
+summary(model_n)
+```
+
+```{r}
+#comparing foodsource and Income with energy value
+x_1 = energy_data$demographics
+x_2 = energy_data$food_source
+y = energy_data$value
+
+model_n1 = lm(y ~  x_1 + x_2 + x_1 * x_2, energy_data)
+summary(model_n1)
+```
+
+```{r}
+#comparing foodsource and Income with energy value using linear regression
+x_1 = energy_data$demographics
+x_2 = energy_data$food_source
+y = energy_data$value
+
+model_n2 = lm(y ~ x_1 * x_2, energy_data)
+summary(model_n2)
+```
+
+```{r}
+# join the demographics(Income and Race) and food_source together in a "new column" table and save it in energy_data variable
+energy_data <- energy_data |> 
+  mutate(new_column = interaction(demographics, food_source))
+
+```
+
+```{r}
+#Remove total from the food_source
+energy_data <- subset(energy_data, food_source != "Total")
+
+```
+
+```{r}
+#visualization of the dataset using Bar graph
+summary_data <- energy_data |> 
+  group_by(new_column) |> 
+  summarise(mean_value = mean(value), se = sd(value)/sqrt(n()))
+
+ggplot(summary_data, aes(x = new_column, y = mean_value)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Demographic + Food Source", y = "Mean Energy Intake")
+```
